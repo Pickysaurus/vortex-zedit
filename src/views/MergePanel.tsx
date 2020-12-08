@@ -38,6 +38,8 @@ function nop() {
 }
 
 class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
+    private mMergeRef;
+
     constructor(props: MergePanelProps) {
         super(props);
 
@@ -50,6 +52,8 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
         });
 
         this.toggleEditMode = this.toggleEditMode.bind(this);
+
+        this.mMergeRef = React.createRef();
     }
 
     checkMerge(merge: zEditMerge, plugins: { [id: string]: any }): {canMerge: boolean, mergeStatus?: string} {
@@ -87,6 +91,7 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
 
         return (
             <Panel expanded={expanded} eventKey={merge.name} onToggle={nop} className='merge-panel'>
+                <span ref={this.mMergeRef} />
                 <Panel.Heading onClick={this.toggleExpanded}>
                     <Panel.Title><Icon name={expanded ? 'showhide-down' : 'showhide-right'}/> {merge.name}</Panel.Title>
                 </Panel.Heading>
@@ -279,7 +284,13 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
 
     }
 
-    private toggleMasters = () => this.nextState.showMasters = !this.state.showMasters;
+    private toggleMasters = () => {
+        this.nextState.showMasters = !this.state.showMasters;
+        // this.mMergeRef.current.scrollIntoView({
+        //     behaviour: 'smooth',
+        //     block: 'start'
+        // });
+    }
 
     renderMasters(masters: string[]): JSX.Element {
         const masterlist = masters.map(
@@ -415,6 +426,11 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
     private toggleEditMode = (save: boolean) => {
         const { editMode, unsavedChanges, expanded } = this.state;
         const { merge, idx, update, plugins } = this.props;
+
+        // this.mMergeRef.current.scrollIntoView({
+        //     behaviour: 'smooth',
+        //     block: 'start'
+        // });
 
         if (editMode && Object.keys(unsavedChanges).length) {
             if (!save) {
