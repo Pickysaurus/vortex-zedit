@@ -20,7 +20,7 @@ class MergePlugin extends ComponentEx<IProps, {}> {
                 className='table-entry'
             >
                 <span className='drag'><Icon name='sort-none' /></span>
-                <span className='name' title={plugin.filename}> {plugin.filename}</span>
+                <span className='name' title={plugin.filename}>{plugin.filename}</span>
                 <span className='status-icon'><Icon name={plugin.missing ? 'toggle-disabled' : 'toggle-enabled'} /></span>
                 <span className='status-icon' title={plugin.mod?.attributes?.name || plugin.mod?.id || 'Not installed'}><Icon name={plugin.mod ? 'mods' : 'dialog-question'} /></span>
             </ListGroupItem>

@@ -29,6 +29,7 @@ interface MergePanelState {
     mergeStatus?: string;
     expanded: boolean;
     editMode: boolean;
+    showMasters: boolean;
     unsavedChanges: any;
 }
 
@@ -43,6 +44,7 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
         this.initState({
             expanded: true,
             editMode: false,
+            showMasters: false,
             unsavedChanges: {},
             ...this.checkMerge(props.merge, props.plugins)
         });
@@ -239,10 +241,12 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
 
     renderPluginsColumn(): JSX.Element {
         const { merge, t, mods, plugins, stagingFolder } = this.props;
-        const { editMode, unsavedChanges } = this.state;
+        const { editMode, unsavedChanges, showMasters } = this.state;
 
         // Show the object, including unsaved changes.
         const m = Object.assign({}, merge, unsavedChanges);
+
+        const masters = showMasters ? m.loadOrder.filter((p) => !m.plugins.find((pl) => pl.filename === p)) : [];
 
         const fullPluginData = getFullPluginData(m.plugins, plugins, mods, stagingFolder);
 
@@ -252,23 +256,43 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
                 <div className='merge-panel-list'>
                     <div className="header-row">
                         <span className='drag' />
-                        <span className='name'> Plugin Name</span>
-                        <span className='status-icon'>Valid</span>
-                        <span className='status-icon'>Mod</span>
+                        <span className='name'>{t('Plugin Name')}</span>
+                        <span className='status-icon'>{t('Valid')}</span>
+                        <span className='status-icon'>{t('Mod')}</span>
                     </div>
+                    { showMasters ? this.renderMasters(masters) : '' }
                     {this.renderPluginList(fullPluginData)}
                 </div>
                 <ButtonGroup>
                     <Button disabled={!editMode}>
-                        <Icon name='add' /> {t('Add plugins')}
+                        <Icon name='add' /> {t('Add')}
                     </Button>
                     <Button disabled={!editMode}>
-                        <Icon name='remove' /> {t('Remove missing plugins')}
+                        <Icon name='remove' /> {t('Remove missing')}
+                    </Button>
+                    <Button onClick={this.toggleMasters}>
+                        <Icon name={showMasters ? 'hide' : 'show'} /> {t(showMasters ? 'Hide Masters' : 'Show Masters')}
                     </Button>
                 </ButtonGroup>
             </div>
         )
 
+    }
+
+    private toggleMasters = () => this.nextState.showMasters = !this.state.showMasters;
+
+    renderMasters(masters: string[]): JSX.Element {
+        const masterlist = masters.map(
+            (master) => (
+                <div className='table-entry'>
+                    <span className='drag' />
+                    <span className='name' title={master}><i>{master}</i></span>
+                    <span className='status-icon' />
+                    <span className='status-icon' />
+                </div>
+            ));
+        
+        return (<>{masterlist}</>);
     }
 
     renderPluginList(data: zEditMergePlugin[]): JSX.Element {
@@ -280,7 +304,7 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
             const staticList = data.map((plugin) => (
                 <div className='table-entry'>
                 <span className='drag' />
-                <span className='name' title={plugin.filename}> {plugin.filename}</span>
+                <span className='name' title={plugin.filename}>{plugin.filename}</span>
                 <span className='status-icon'><Icon name={plugin.missing ? 'toggle-disabled' : 'toggle-enabled'} /></span>
                 <span className='status-icon' title={plugin.mod?.attributes?.name || plugin.mod?.id || 'Not installed'}><Icon name={plugin.mod ? 'mods' : 'dialog-question'} /></span>
                 </div>
@@ -305,15 +329,29 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
         const { unsavedChanges } = this.state;
         const { merge } = this.props;
 
+        // Remove excess data from each entry.
         const newOrder = ordered.map((item: zEditMergePlugin) => ({ filename: item.filename, dataFolder: item.dataFolder }));
 
+        // Get the load order entry.
+        const currentLoadOrder = [...merge.loadOrder];
+
+        // Get only the masters of the mergeable plugins.
+        const dependencies = currentLoadOrder.filter((p) => !newOrder.find(pl => pl.filename === p));
+
+        // Apply the revised load order by combining the masters with the new order.
+        unsavedChanges.loadOrder = dependencies.concat(newOrder.map((p) => p.filename));
+
+        // Get the current plugin list
         const current = unsavedChanges?.plugins || merge.plugins;
         
+        // If the same, do nothing (might need lodash?)
         if (newOrder === current) return;
 
+        // If the same as the base, delete the override.
         if (unsavedChanges?.plugins && newOrder === merge.plugins) {
             delete unsavedChanges.plugins;
         }
+        // Assign the new order to override display.
         else unsavedChanges.plugins = newOrder;       
 
     }
