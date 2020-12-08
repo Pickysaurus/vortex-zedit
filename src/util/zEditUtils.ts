@@ -30,6 +30,7 @@ async function getzEditFromGitHub(context: types.IComponentContext): Promise<str
         }
         catch (err) {
             err.message = 'Error downloading from Github: '+err.message;
+            log('error', err.message);
             throw err;
         }
 

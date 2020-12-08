@@ -80,7 +80,7 @@ export async function download(context: types.IComponentContext, version: any, d
         id: 'zedit-download',
         type: 'activity',
         title: 'Downloading zEdit',
-        message: version.assets[0].name
+        message: `${version.assets[0].name} (${formatBytes(version.assets[0].name)})`
     }
 
     context.api.sendNotification({
@@ -118,9 +118,9 @@ export async function download(context: types.IComponentContext, version: any, d
           res
             .on('data', data => {
               output += data
-              if (output.length % 500 === 0) {
+              if (output.length % 5 === 0) {
                 // Updating the notification is EXTREMELY expensive.
-                //  the length % 500 === 0 line ensures this is not done too
+                //  the length % 5 === 0 line ensures this is not done too
                 //  often.
                 context.api.sendNotification({
                   ...downloadNotif,
@@ -143,4 +143,18 @@ export async function download(context: types.IComponentContext, version: any, d
           .end();
       });
 
+}
+
+
+// This function was taken from https://stackoverflow.com/questions/15900485/correct-way-to-convert-size-in-bytes-to-kb-mb-gb-in-javascript
+function formatBytes(bytes, decimals = 2) {
+  if (bytes === 0) return '0 Bytes';
+
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }

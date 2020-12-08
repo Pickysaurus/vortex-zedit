@@ -42,7 +42,7 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
         super(props);
 
         this.initState({
-            expanded: true,
+            expanded: false,
             editMode: false,
             showMasters: false,
             unsavedChanges: {},
@@ -86,7 +86,7 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
         const relLastBuild = util.relativeTime(lastBuild, t)
 
         return (
-            <Panel expanded={expanded} eventKey={merge.name} onToggle={nop}>
+            <Panel expanded={expanded} eventKey={merge.name} onToggle={nop} className='merge-panel'>
                 <Panel.Heading onClick={this.toggleExpanded}>
                     <Panel.Title><Icon name={expanded ? 'showhide-down' : 'showhide-right'}/> {merge.name}</Panel.Title>
                 </Panel.Heading>
@@ -413,7 +413,7 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
     }
 
     private toggleEditMode = (save: boolean) => {
-        const { editMode, unsavedChanges } = this.state;
+        const { editMode, unsavedChanges, expanded } = this.state;
         const { merge, idx, update, plugins } = this.props;
 
         if (editMode && Object.keys(unsavedChanges).length) {
@@ -427,6 +427,8 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
                 this.checkMerge(newMerge, plugins);
             }
         }
+
+        if (!editMode && !expanded) this.nextState.expanded = true;
 
         this.nextState.unsavedChanges = {};
         this.nextState.editMode = !editMode;

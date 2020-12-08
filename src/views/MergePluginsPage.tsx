@@ -2,13 +2,16 @@ import { remote } from 'electron';
 import * as React from 'react';
 import * as path from 'path';
 import { Alert, Button, ButtonGroup, Panel } from 'react-bootstrap';
-import { actions, MainPage, ComponentEx, selectors, types, util, IconBar, ToolbarIcon, Icon, Spinner, fs, log } from 'vortex-api';
+import { MainPage, ComponentEx, selectors, types, util, IconBar, ToolbarIcon, Icon, Spinner, fs, log } from 'vortex-api';
 import { withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import { setzEditPath, setzEditProfile } from '../actions/actions';
 import { runzEdit, getzEditFromGitHub, checkzEditConfig, getMerges, updateMerges } from '../util/zEditUtils';
 import { zEditMerge } from '../types/zEditTypes';
 import MergePanel from './MergePanel';
+
+const zEditGitHubLink = 'https://z-edit.github.io/';
+const zEditNexusMods = '';
 
 interface IBaseProps {
     active: boolean;
@@ -214,6 +217,7 @@ class MergePluginsPage extends ComponentEx<IMergePluginsProps,IMergePluginsState
                         <h1>{t('Merge Plugins')}</h1>
                         <div>
                             {t('Some info about how zMerge works, and that it\'s written by Mator.')}
+                            <p>zEdit has been located at {zEditPath || 'the interwebz'}.</p>
                         </div>
                         </div>
                         <div id='merge-plugins-container'>
@@ -257,20 +261,28 @@ class MergePluginsPage extends ComponentEx<IMergePluginsProps,IMergePluginsState
             />
             <h2>{t('zEdit not detected')}</h2>
             <p>{t('In order to manage your merges, you\'ll need a copy of zEdit by Mator. Vortex can download it for you, or you can use the browse option to use an existing copy.')}</p>
+            <p><a onClick={() => util.opn(zEditGitHubLink).catch(() => undefined)}>{t('Learn more about zEdit...')}</a></p>
             <ButtonGroup>
                     <Button
                         tooltip={t('Download zEdit from GitHub')}
                         onClick={this.getzEdit}
                         disabled={busy}
                     >
-                        <Icon name='download' /> Download
+                        <Icon name='download' /> {t('Download')}
                     </Button>
                     <Button
                         tooltip={t('Browse for an installed version of zEdit')}
                         onClick={this.browsePath}
                         disabled={busy}
                     >
-                        <Icon name='browse' /> Browse
+                        <Icon name='browse' /> {t('Browse')}
+                    </Button>
+                    <Button
+                        tooltip={t('View on Nexus Mods (ETA Jan 2021)')}
+                        onClick={() => util.opn(zEditNexusMods).catch(() => undefined)}
+                        disabled={true}
+                    >
+                        <Icon name='nexus' /> {t('Nexus Mods')}
                     </Button>
             </ButtonGroup>
         </div>
@@ -331,7 +343,6 @@ class MergePluginsPage extends ComponentEx<IMergePluginsProps,IMergePluginsState
         return (
         <div id='merge-plugins-list'>
             {mergePanels}
-            <p>zEdit has been located at {zEditPath}.</p>
         </div>
         );
     }
