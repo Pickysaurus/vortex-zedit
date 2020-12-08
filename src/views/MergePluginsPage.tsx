@@ -121,7 +121,7 @@ class MergePluginsPage extends ComponentEx<IMergePluginsProps,IMergePluginsState
                         key: 'btn-clear',
                         icon: 'refresh',
                         text: 'Update Merges',
-                        onClick: async () => this.nextState.merges = await getMerges(zEditPath, zEditProfile)
+                        onClick: async () => this.nextState.merges = zEditPath ? await getMerges(zEditPath, zEditProfile) : undefined;
                     }
                 }
             }
