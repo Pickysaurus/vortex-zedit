@@ -5,3 +5,6 @@ export const setzEditPath = createAction('SET_ZEDIT_PATH',
 
 export const setzEditProfile = createAction('SET_ZEDIT_PROFILE',
     (gameId: string, name: string) => ({ gameId, name }));
+
+export const setzEditDialogMerge = createAction('SET_ZEDIT_DIALOG_MERGE', 
+    (mergeName: string, pluginIds: string[]) => ({mergeName, pluginIds}));

@@ -232,10 +232,11 @@ async function createModEntry(api: types.IExtensionApi, gameId:string, merge: zE
     return modId;
 }
 
-function getFullPluginData(mergePlugins: zEditMergePlugin[], plugins: {[id: string]: any}, mods: {[id: string]: types.IMod}, stagingFolder: string) {
+function getFullPluginData(mergePlugins: zEditMergePlugin[], plugins: {[id: string]: any}, mods: {[id: string]: types.IMod}, stagingFolder: string): zEditMergePlugin[] {
     const pluginArray = Object.values(plugins);
     
-    return mergePlugins.map((mp: zEditMergePlugin) => {
+    return mergePlugins.map((plugin: zEditMergePlugin) => {
+        const mp = {...plugin};
         const deployedPlugin = pluginArray.find((p) => p.name === mp.filename);
         mp.missing = deployedPlugin === undefined;
         mp.pluginInfo = deployedPlugin;
@@ -265,6 +266,27 @@ function gameNameToIntId(game: string): number {
         'Skyrim', 'Skyrim SE', 'Fallout 4'].indexOf(game);
 }
 
+function loadOrderFromPlugins(mergePlugins: zEditMergePlugin[], plugins?: {[id: string] : any}): string[] {
+    // Build a very basic load order using the existing plugin load order. 
+    let loPlugins = mergePlugins.reduce((prev, cur) => {
+        const masters = cur.pluginInfo?.masterList;
+        if (masters) return prev.concat(masters);
+        return prev;
+    }, [])
+
+    let sorted = [...new Set(loPlugins)];
+
+    if (plugins) {
+        sorted.sort((a, b) => {
+            const pluginInfoA = plugins[a.toLowerCase()];
+            const pluginsInfoB = plugins[b.toLowerCase()];
+            return pluginInfoA.loadOrder >= pluginsInfoB.loadOrder ? 1 : -1;
+        });
+    }
+
+    return sorted;
+}
+
 function runzEdit(api: types.IExtensionApi, zEditPath: string, mode?: string, zEditProfile?: string, mergeName?: string) {
     const args = [];
     if (mode) args.push(`-appMode="${mode}"`)
@@ -276,4 +298,4 @@ function runzEdit(api: types.IExtensionApi, zEditPath: string, mode?: string, zE
     });
 }
 
-export { runzEdit, getzEditFromGitHub, checkzEditConfig, getMerges, updateMerges, createModEntry, getFullPluginData };
+export { runzEdit, getzEditFromGitHub, checkzEditConfig, getMerges, updateMerges, createModEntry, getFullPluginData, loadOrderFromPlugins };

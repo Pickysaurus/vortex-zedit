@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ComponentEx, Icon } from 'vortex-api';
+import { ComponentEx, Icon, util } from 'vortex-api';
 import { ListGroupItem } from 'react-bootstrap';
 import { zEditMergePlugin } from '../types/zEditTypes';
 
@@ -22,7 +22,7 @@ class MergePlugin extends ComponentEx<IProps, {}> {
                 <span className='drag'><Icon name='sort-none' /></span>
                 <span className='name' title={plugin.filename}>{plugin.filename}</span>
                 <span className='status-icon'><Icon name={plugin.missing ? 'toggle-disabled' : 'toggle-enabled'} /></span>
-                <span className='status-icon' title={plugin.mod?.attributes?.name || plugin.mod?.id || 'Not installed'}><Icon name={plugin.mod ? 'mods' : 'dialog-question'} /></span>
+                <span className='status-icon' title={plugin.mod ? util.renderModName(plugin.mod) : 'Not installed'}><Icon name={plugin.mod ? 'mods' : 'dialog-question'} /></span>
             </ListGroupItem>
         )
     }

@@ -74,7 +74,7 @@ class MergePluginsPage extends ComponentEx<IMergePluginsProps,IMergePluginsState
             {
                 component: ToolbarIcon,
                 props: () => {
-                    const { t } = this.props;
+                    const { t, zEditPath } = this.props;
                     return {
                         id: 'btn-new-merge',
                         key: 'btn-new-merge',
@@ -82,9 +82,11 @@ class MergePluginsPage extends ComponentEx<IMergePluginsProps,IMergePluginsState
                         text: t('Create Merge'),
                         onClick: () => {
                             console.log('Yay!')
-                        }
+                        },
+                        condition: () => !!zEditPath ? true: t('zEdit not detected.') as string
                     }
-                }
+                },
+                condition: () => (!!this.props.zEditPath)
             },
             {
                 component: ToolbarIcon,
@@ -97,36 +99,43 @@ class MergePluginsPage extends ComponentEx<IMergePluginsProps,IMergePluginsState
                         text: t('Open zEdit'),
                         onClick: () => {
                             const api = this.context.api;
+                            if (!zEditPath) return api.sendNotification({type: 'error', message:'zEdit path has not been set', displayMS: 5000 });
                             runzEdit(api, zEditPath, 'merge', zEditProfile);
                         }
                     }
-                }
+                },
+                condition: () => (!!this.props.zEditPath)
             },
             {
                 component: ToolbarIcon,
                 props: () => {
-                    const { setzEditPath } = this.props;
+                    const { setzEditPath, zEditPath, t } = this.props;
                     return {
                         id: 'btn-clear',
                         key: 'btn-clear',
                         icon: 'refresh',
                         text: 'Update zEdit Path',
-                        onClick: () => setzEditPath(undefined)
+                        onClick: () => setzEditPath(undefined),
                     }
-                }
+                },
+                condition: () => (!!this.props.zEditPath)
             },
             {
                 component: ToolbarIcon,
                 props: () => {
-                    const { zEditPath, zEditProfile } = this.props;
+                    const { t, zEditPath, zEditProfile } = this.props;
                     return {
                         id: 'btn-clear',
                         key: 'btn-clear',
                         icon: 'refresh',
                         text: 'Update Merges',
-                        onClick: async () => this.nextState.merges = zEditPath ? await getMerges(zEditPath, zEditProfile) : undefined
+                        action: async () => this.nextState.merges = zEditPath ? await getMerges(zEditPath, zEditProfile) : [],
+                        condition: () => !!zEditPath ? true : t('zEdit not detected.') as string,
+                        
                     }
-                }
+                },
+                condition: () => (!!this.props.zEditPath),
+                title: 'Update merges from the zMerge JSON file.'
             }
         ];
     }

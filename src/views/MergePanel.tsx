@@ -166,7 +166,7 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
                     ?
                     <FormControl
                     type='text'
-                    value={mod.attributes.name || mod.id}
+                    value={util.renderModName(mod)}
                     disabled={true}
                     />
                     : <div><Button onClick={this.createMod}><Icon name='add' /> {t('Create Mod')}</Button></div>
@@ -232,7 +232,7 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
                     <Toggle disabled={!editMode} checked={m.handleVoiceData} onToggle={() => this.toggleGeneralAttribute('handleVoiceData')}>{t('Voice Data')}</Toggle>
                     </span>
                     <span className='merge-plugins-checkbox'>
-                    <div></div>
+                    <Toggle disabled={!editMode} checked={m.handleDialogViews} onToggle={() => this.toggleGeneralAttribute('handleDialogViews')}>{t('Dialog Views')}</Toggle>
                     </span>
                 </div>
             </FormGroup>
