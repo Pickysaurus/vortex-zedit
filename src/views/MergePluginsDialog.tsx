@@ -3,7 +3,7 @@ import { withTranslation } from 'react-i18next';
 import { Button } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import { Creatable } from 'react-select';
-import { ComponentEx, types, selectors, util, Modal, Spinner } from "vortex-api";
+import { ComponentEx, types, selectors, util, Modal, Spinner, Table, ITableRowAction, TableTextFilter } from "vortex-api";
 import { setzEditDialogMerge } from '../actions/actions';
 import { zEditMerge, zEditMergePlugin } from "../types/zEditTypes";
 import { getMerges, loadOrderFromPlugins } from '../util/zEditUtils';
@@ -26,6 +26,7 @@ interface IConnectedProps {
     plugins: { [id: string] : any };
     stagingFolder: string;
     pluginIds: string[];
+    discovery: types.IDiscoveryResult;
 }
 
 type DialogProps = IActionProps & IConnectedProps & IBaseProps;
@@ -43,6 +44,8 @@ interface DialogState {
 
 
 class MergePluginsDialog extends ComponentEx<DialogProps, DialogState> {
+    private mAttributes: types.ITableAttribute[];
+    private mActions: ITableRowAction[];
 
     constructor(props: DialogProps) {
         super(props);
@@ -50,6 +53,9 @@ class MergePluginsDialog extends ComponentEx<DialogProps, DialogState> {
         this.initState({
             step: 'load',
         });
+
+        this.mAttributes = this.genAttributes();
+        this.mActions = this.genActions();
     }
 
     public componentDidUpdate(prevProps: DialogProps, prevState: DialogState) {
@@ -71,17 +77,18 @@ class MergePluginsDialog extends ComponentEx<DialogProps, DialogState> {
             if (mergeName) this.nextState.activeMerge = merge;
         }
         if (plugins && pluginIds) {
-            this.nextState.newPlugins = pluginIds.map((p) => {
+            const mappedPlugins: zEditMergePlugin[] = pluginIds.map((p) => {
                 const pluginInfo = plugins[p];
-                const mod = pluginInfo.modName ? mods[pluginInfo.modName] : undefined;
+                const mod = pluginInfo?.modName ? mods[pluginInfo.modName] : undefined;
 
                 return {
-                    filename: pluginInfo.name,
+                    filename: pluginInfo?.name || p,
                     dataFolder: mod ? `${stagingFolder}\\${mod?.id}` : '',
                     pluginInfo,
                     mod
                 }
             });
+            this.nextState.newPlugins = merge ? mappedPlugins.concat(merge.plugins) : mappedPlugins;
             this.nextState.newLoadOrder = loadOrderFromPlugins(this.nextState.newPlugins, plugins);
         }
 
@@ -171,12 +178,103 @@ class MergePluginsDialog extends ComponentEx<DialogProps, DialogState> {
     }
 
     renderPluginPicker(): JSX.Element {
+        const { plugins } = this.props;
+
         return (
-            <p>Picker</p>
+            <Table 
+                tableId='merge-plugins-selector'
+                data={plugins}
+                actions={this.mActions}
+                staticElements={this.mAttributes}
+            />
         )
     }
 
+    private genActions(): ITableRowAction[] {
+        return [];
+    }
+
+    private isPluginInState(plugin: any): boolean {
+        const { newPlugins } = this.state;
+        if (!newPlugins) return false;
+        const inState = newPlugins.find((p) => p.filename === plugin.name);
+        return !!inState;
+    }
+
+    private togglePluginInState(plugin: any): void {
+        const { newPlugins } = this.state;
+        const { stagingFolder, discovery } = this.props;
+        const mp = newPlugins 
+            ? newPlugins.find((p) => p.filename === plugin.name) 
+            : undefined;
+        
+        if (mp) newPlugins.splice(newPlugins.indexOf(mp), 1)
+        else {
+            const dataFolder = plugin.modName 
+                ? `${stagingFolder}\\${plugin.modName}`
+                : `${discovery.path}\\Data`;
+            
+            newPlugins.push( { filename: plugin.name, dataFolder });
+        }
+    }
+
+    private genAttributes(): types.ITableAttribute[] {
+        return [
+            {
+                id: 'status',
+                name: 'Include',
+                description: 'Should this mod be included in the merge?',
+                icon: 'level-up',
+                calc: plugin => this.isPluginInState(plugin) ? 'Yes' : 'No',
+                externalData: () => undefined,
+                placement: 'table',
+                isToggleable: false,
+                isSortable: true,
+                isVolatile: true,
+                edit: {
+                    inline: true,
+                    choices: () => [
+                        { key: 'yes', text: 'Yes'},
+                        { key: 'no', text: 'No' }
+                    ],
+                    onChangeValue: this.togglePluginInState.bind(this)
+                }
+            },
+            {
+                id: 'name',
+                name: 'Plugin name',
+                description: 'The plugin file name.',
+                icon: 'quote-left',
+                calc: plugin => plugin.name,
+                placement: 'both',
+                isSortable: true,
+                filter: new TableTextFilter(true),
+                noShrink: true,
+                edit: {},
+                sortFunc: (lhs: string, rhs: string, locale: string): number => {
+                    return lhs.localeCompare(rhs, locale, { sensitivity: 'base' });
+                }
+            },
+            {
+                id: 'lo-index',
+                name: 'Load Order',
+                description: 'Load Order Position',
+                calc: plugin => plugin.loadOrder,
+                isSortable: true,
+                isDefaultSort: true,
+                edit: {},
+                placement: 'table'
+            }
+        ];
+    }
+
 }
+
+// function mapPluginArrayToObject(array : zEditMergePlugin[]): { [id: string] : zEditMergePlugin} {
+//     let result = {};
+//     array.map((p) => result[p.filename] = p);
+//     return result
+// }
 
 function mapStateToProps(state: types.IState): IConnectedProps {
     const path: string = util.getSafe(state, ['settings', 'zEdit', 'path'], undefined);
@@ -187,9 +285,11 @@ function mapStateToProps(state: types.IState): IConnectedProps {
     const mods = util.getSafe(state, ['persistent', 'mods', gameId], {});
     const plugins = util.getSafe(state, ['session', 'plugins', 'pluginInfo'], {});
     const stagingFolder: string = selectors.installPath(state);
+    const discovery = util.getSafe(state, ['settings', 'gameMode', 'discovered', gameId], {});
     return {
         path, gameId, profile, mergeName,
-        mods, plugins, stagingFolder, pluginIds
+        mods, plugins, stagingFolder, pluginIds,
+        discovery
     }
 }
   

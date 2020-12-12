@@ -108,7 +108,7 @@ interface zEditMerge {
     handleIniFiles: boolean;
     handleDialogViews?: boolean;
     copyGeneralAssets: boolean;
-    dateBuilt: Date;
+    dateBuilt?: Date;
     plugins: zEditMergePlugin[];
     // We probably want to save the Vortex mod that controls this merge, but it's not natively supported by zEdit.
     vortexModId?: string;
@@ -120,7 +120,7 @@ class zEditMerge {
         this.filename = `${name}.esp`;
         this.method = 'Clean';
         this.loadOrder = loadOrder;
-        this.archiveAction = 'Copy';
+        this.archiveAction = 'Extract';
         this.buildMergedArchives = false;
         this.useGameLoadOrder = false;
         this.handleFaceData = true;
@@ -132,7 +132,6 @@ class zEditMerge {
         this.handleIniFiles = true;
         this.handleDialogViews = true;
         this.copyGeneralAssets = false;
-        this.dateBuilt = new Date();
         this.plugins = plugins;
     }
 }

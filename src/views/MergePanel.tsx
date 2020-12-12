@@ -4,6 +4,7 @@ import { Button, ButtonGroup, Panel, FormGroup, ControlLabel, FormControl } from
 import { ComponentEx, selectors, types, util, Icon, Toggle, DraggableList } from 'vortex-api';
 import { zEditMerge, zEditMergePlugin } from '../types/zEditTypes';
 import { createModEntry, getFullPluginData, runzEdit } from '../util/zEditUtils';
+import { setzEditDialogMerge } from '../actions/actions';
 import MergePlugin from './MergePlugin';
 
 interface ICompnentProps {
@@ -22,7 +23,11 @@ interface IConnectedProps {
     stagingFolder: string;
 }
 
-type MergePanelProps = ICompnentProps & IConnectedProps;
+interface IActionProps {
+    setzEditDialogMerge: (mergeName: string, pluginIds: string[]) => void;
+}
+
+type MergePanelProps = ICompnentProps & IConnectedProps & IActionProps;
 
 interface MergePanelState {
     canMerge: boolean;
@@ -86,11 +91,22 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
         const { merge, t } = this.props;  
         const { canMerge, expanded, editMode, mergeStatus } = this.state;
         
-        const lastBuild = new Date(merge.dateBuilt);
-        const relLastBuild = util.relativeTime(lastBuild, t)
+        let lastBuild: Date;
+        let relLastBuild: String = t('Never');
+
+        if (merge.dateBuilt) {
+            lastBuild = new Date(merge.dateBuilt);
+            relLastBuild = util.relativeTime(lastBuild, t);
+        }
 
         return (
-            <Panel expanded={expanded} eventKey={merge.name} onToggle={nop} className='merge-panel'>
+            <Panel 
+                expanded={expanded} 
+                eventKey={merge.name} 
+                onToggle={nop} 
+                className='merge-panel'
+                key={merge.name}
+            >
                 <span ref={this.mMergeRef} />
                 <Panel.Heading onClick={this.toggleExpanded}>
                     <Panel.Title><Icon name={expanded ? 'showhide-down' : 'showhide-right'}/> {merge.name}</Panel.Title>
@@ -107,7 +123,7 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
                      : <Button onClick={this.discardEdits}><Icon name='toggle-disabled'/> {t('Cancel')}</Button>
                     }
                     </ButtonGroup>
-                    <span title={lastBuild.toLocaleString()}><b>Last Built: </b> {relLastBuild}</span>
+                    <span title={lastBuild ? lastBuild.toLocaleString(): t('Never')}><b>Last Built: </b> {relLastBuild}</span>
                     <span className={canMerge ? 'ready' : 'warning'}><b>Status: </b> <Icon name={canMerge ? 'toggle-enabled' : 'toggle-disabled'} /> {t(mergeStatus)}</span>
                 </Panel.Footer>
             </Panel>
@@ -269,7 +285,7 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
                     {this.renderPluginList(fullPluginData)}
                 </div>
                 <ButtonGroup>
-                    <Button disabled={!editMode}>
+                    <Button disabled={!editMode} onClick={this.addPlugins}>
                         <Icon name='add' /> {t('Add')}
                     </Button>
                     <Button disabled={!editMode}>
@@ -282,6 +298,12 @@ class MergePanel extends ComponentEx<MergePanelProps,MergePanelState> {
             </div>
         )
 
+    }
+
+    private addPlugins = () => {
+        const { setzEditDialogMerge, merge } = this.props;
+        const pluginIds: string[] = merge.plugins.map((plugin) => plugin.filename.toLowerCase());
+        setzEditDialogMerge(merge.name, pluginIds);
     }
 
     private toggleMasters = () => {
@@ -493,8 +515,10 @@ function mapStateToProps(state: types.IState): IConnectedProps {
     };
 }
   
-function mapDispatchToProps(dispatch: any) {
-    return {};
+function mapDispatchToProps(dispatch: any): IActionProps {
+    return {
+        setzEditDialogMerge: (mergeName: string, pluginIds?: string[]) => dispatch(setzEditDialogMerge(mergeName, pluginIds))
+    };
 }
 
 export default (connect(mapStateToProps, mapDispatchToProps)(MergePanel));

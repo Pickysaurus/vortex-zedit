@@ -5,7 +5,7 @@ import { Alert, Button, ButtonGroup, Panel } from 'react-bootstrap';
 import { MainPage, ComponentEx, selectors, types, util, IconBar, ToolbarIcon, Icon, Spinner, fs, log } from 'vortex-api';
 import { withTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
-import { setzEditPath, setzEditProfile } from '../actions/actions';
+import { setzEditPath, setzEditProfile, setzEditDialogMerge } from '../actions/actions';
 import { runzEdit, getzEditFromGitHub, checkzEditConfig, getMerges, updateMerges } from '../util/zEditUtils';
 import { zEditMerge } from '../types/zEditTypes';
 import MergePanel from './MergePanel';
@@ -32,6 +32,7 @@ interface IConnectedProps {
 interface IActionProps {
     setzEditPath: (path: string) => void;
     setzEditProfile: (gameId: string, name: string) => void;
+    setzEditDialogMerge: (mergeName: string, pluginIds?: string[]) => void;
 }
 
 interface IMergePluginsState {
@@ -74,14 +75,38 @@ class MergePluginsPage extends ComponentEx<IMergePluginsProps,IMergePluginsState
             {
                 component: ToolbarIcon,
                 props: () => {
-                    const { t, zEditPath } = this.props;
+                    const { t, zEditPath, zEditProfile, setzEditDialogMerge } = this.props;
+                    const { merges } = this.state;
                     return {
                         id: 'btn-new-merge',
                         key: 'btn-new-merge',
                         icon: 'add',
                         text: t('Create Merge'),
                         onClick: () => {
-                            console.log('Yay!')
+                            // setzEditDialogMerge(undefined, [])
+                            this.context.api.showDialog('question', t('Create new merge'), {
+                                text: 'What would you like the new merge to be called?',
+                                input: [
+                                    {
+                                        id: 'newMergeName',
+                                        type: 'text',
+                                        value: '',
+                                        label: 'Merge Name'
+                                    }
+                                ]
+                            }, [{ label: 'Create' }, { label: 'Cancel' }])
+                            .then((result) => {
+                                if (result.action === 'Cancel' || !result.input['newMergeName']) return;
+                                const name = result.input['newMergeName'];
+                                const newMerge = new zEditMerge(name, [], []);
+                                const newList = [newMerge].concat(merges)
+                                return updateMerges(zEditPath, zEditProfile, newList)
+                                .then(() => {
+                                    setzEditDialogMerge(name, [])
+                                    this.nextState.merges = newList;
+                                })
+                                .catch((err) => this.context.api.showErrorNotification('Failed to create merge', err.message));
+                            })
                         },
                         condition: () => !!zEditPath ? true: t('zEdit not detected.') as string
                     }
@@ -405,7 +430,8 @@ function mapStateToProps(state: types.IState): IConnectedProps {
 function mapDispatchToProps(dispatch: any): IActionProps {
     return {
         setzEditPath: (path: string) => dispatch(setzEditPath(path)),
-        setzEditProfile: (gameId: string, name: string) => dispatch(setzEditProfile(gameId, name))
+        setzEditProfile: (gameId: string, name: string) => dispatch(setzEditProfile(gameId, name)),
+        setzEditDialogMerge: (mergeName: string, pluginIds?: string[]) => dispatch(setzEditDialogMerge(mergeName, pluginIds))
     };
 }
 
